@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
-import { Search, Trash2, Code, Activity, Brain } from "lucide-react";
+import { Search, Trash2, Code, Activity, Brain, X } from "lucide-react";
+import { apiFetch } from "../lib/api";
 import "./History.css";
-
-const API_BASE = `${import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000"}/api`;
 
 export default function History() {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showClearDialog, setShowClearDialog] = useState(false);
 
   useEffect(() => {
     fetchHistory();
@@ -15,7 +15,7 @@ export default function History() {
 
   const fetchHistory = async () => {
     try {
-      const res = await fetch(`${API_BASE}/history/`);
+      const res = await apiFetch("/history/");
       if (res.ok) {
         const data = await res.json();
         setHistory(data);
@@ -28,13 +28,13 @@ export default function History() {
   };
 
   const clearHistory = async () => {
-    if (!window.confirm("Are you sure you want to clear all history?")) return;
     try {
-      await fetch(`${API_BASE}/history/clear/`, { method: "DELETE" });
-      setHistory([]);
+      const response = await apiFetch("/history/clear/", { method: "DELETE" });
+      if (response.ok) setHistory([]);
     } catch {
       // silently fail
     }
+    setShowClearDialog(false);
   };
 
   const formatTime = (isoStr) => {
@@ -65,7 +65,7 @@ export default function History() {
           <p>Review your past code complexity analyses across all sessions.</p>
         </div>
         {history.length > 0 && (
-          <button className="btn btn-danger" onClick={clearHistory}>
+          <button className="btn btn-danger" onClick={() => setShowClearDialog(true)}>
             <Trash2 size={16} /> Clear All
           </button>
         )}
@@ -122,6 +122,20 @@ export default function History() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+      {showClearDialog && (
+        <div className="history-modal-backdrop" role="presentation" onClick={() => setShowClearDialog(false)}>
+          <section className="history-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="clear-history-title" onClick={event => event.stopPropagation()}>
+            <button className="history-modal-close" aria-label="Close" onClick={() => setShowClearDialog(false)}><X size={18} /></button>
+            <div className="history-modal-icon"><Trash2 size={22} /></div>
+            <h2 id="clear-history-title">Clear your history?</h2>
+            <p>This will permanently remove all saved code analysis records.</p>
+            <div className="history-modal-actions">
+              <button className="btn btn-secondary" onClick={() => setShowClearDialog(false)}>Keep history</button>
+              <button className="btn btn-danger" onClick={clearHistory}>Clear all</button>
+            </div>
+          </section>
         </div>
       )}
     </div>

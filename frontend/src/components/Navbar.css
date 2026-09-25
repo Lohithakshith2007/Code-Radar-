@@ -35,6 +35,9 @@
   background-clip: text;
 }
 
+.navbar-logo h1.brand-name { color: var(--text-primary); }
+.navbar-logo h1.brand-name span { font-size: inherit; font-weight: inherit; }
+
 .logo-icon {
   width: 32px;
   height: 32px;
@@ -154,4 +157,3 @@
   gap: 8px;
   font-weight: 600;
 }
-

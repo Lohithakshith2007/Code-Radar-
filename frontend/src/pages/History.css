@@ -194,6 +194,36 @@
   border-color: rgba(239, 68, 68, 0.4);
 }
 
+.history-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(3, 5, 15, .72);
+  backdrop-filter: blur(9px);
+  animation: historyFadeIn .18s ease-out;
+}
+.history-confirm-modal {
+  position: relative;
+  width: min(100%, 420px);
+  padding: 32px;
+  border: 1px solid var(--border-glow);
+  border-radius: 20px;
+  background: linear-gradient(145deg, var(--bg-card), var(--bg-secondary));
+  box-shadow: 0 24px 80px rgba(0,0,0,.55);
+  text-align: center;
+  animation: historyModalIn .22s ease-out;
+}
+.history-modal-close { position: absolute; top: 14px; right: 14px; display: grid; place-items: center; border: 0; background: transparent; color: var(--text-muted); cursor: pointer; }
+.history-modal-icon { display: grid; place-items: center; width: 52px; height: 52px; margin: 0 auto 18px; border-radius: 16px; color: var(--danger); background: var(--danger-bg); }
+.history-confirm-modal h2 { margin-bottom: 8px; color: var(--text-primary); font-size: 21px; }
+.history-confirm-modal p { color: var(--text-secondary); font-size: 14px; }
+.history-modal-actions { display: flex; justify-content: center; gap: 12px; margin-top: 26px; }
+@keyframes historyFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes historyModalIn { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
 @media (max-width: 768px) {
   .history-header-main {
     flex-direction: column;

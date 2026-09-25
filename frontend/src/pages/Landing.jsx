@@ -13,7 +13,7 @@ export default function Landing() {
       <section className="hero">
         <div className="hero-badge">
           <span className="badge-pulse"></span>
-          Code Radar v4.1 is Live
+          Intelligent code insights, at a glance
         </div>
         <h1 className="hero-title">
           Understand Your Code <br />
@@ -21,13 +21,13 @@ export default function Landing() {
         </h1>
         <p className="hero-subtitle">
           Instantly evaluate any language structure, predict maintainability using AST feature extraction,
-          and get actionable refactoring advice powered by Groq Llama 3.3.
+          and get actionable refactoring advice powered by gpt oss 120b.
         </p>
         <div className="hero-cta">
           <Link to="/dashboard" className="btn btn-primary btn-large cta-glow">
             Start Analyzing <ArrowRight size={18} />
           </Link>
-          <a href="https://github.com/lohithaCode" target="_blank" className="btn btn-secondary btn-large">
+          <a href="https://github.com/Lohithakshith2007/Code-Radar-" target="_blank" rel="noreferrer" className="btn btn-secondary btn-large">
             <Code size={18} /> View Source
           </a>
         </div>

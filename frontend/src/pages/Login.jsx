@@ -1,41 +1,36 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link, useLocation, Navigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { LogIn, UserPlus, Mail, Lock, Loader2 } from 'lucide-react';
+import useAuth from '../context/useAuth';
+import { LogIn, UserPlus, Mail, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
 import './Login.css';
 
 export default function Login() {
   const { user, login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
-  if (user) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || '/dashboard';
+  const from = location.state?.from?.pathname || '/';
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    // Simulate a brief delay to make it feel real
-    setTimeout(() => {
-      if (email && password) {
-        // Simulate a successful login with local data
-        login({ email, username: email.split('@')[0], name: 'Demo User' });
-        navigate(from, { replace: true });
-      } else {
-        setError('Please fill in all fields.');
-      }
+    try {
+      await login({ email, password });
+      navigate(from, { replace: true });
+    } catch (err) {
+      setError(err.message || 'Unable to sign in.');
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
+
+  if (user) return <Navigate to="/" replace />;
 
   return (
     <div className="auth-container">
@@ -71,13 +66,14 @@ export default function Login() {
             <div className="input-wrapper">
               <Lock size={18} className="input-icon" />
               <input 
-                type="password" 
+                type={showPassword ? 'text' : 'password'} 
                 id="password" 
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 placeholder="••••••••"
                 required 
               />
+              <button type="button" className="password-toggle" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword(value => !value)}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button>
             </div>
           </div>
 

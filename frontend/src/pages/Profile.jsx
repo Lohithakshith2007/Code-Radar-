@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import useAuth from '../context/useAuth';
+import { apiFetch, responseError, setAuthToken } from '../lib/api';
 import { 
   User, 
   Mail, 
@@ -7,7 +8,6 @@ import {
   Shield, 
   LogOut, 
   Settings, 
-  Bell, 
   Lock, 
   Save, 
   CheckCircle2, 
@@ -22,13 +22,12 @@ import {
 import './Profile.css';
 
 export default function Profile() {
-  const { user, login, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState('Account Details');
   
   // Local form state
   const [username, setUsername] = useState(user?.username || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [is2FAEnabled, setIs2FAEnabled] = useState(true); // Default to on for demo
   const [showToast, setShowToast] = useState(false);
   const [toastMsg, setToastMsg] = useState('Settings updated successfully!');
   const [isSaving, setIsSaving] = useState(false);
@@ -38,7 +37,27 @@ export default function Profile() {
   const [passwords, setPasswords] = useState({ current: '', next: '', confirm: '' });
 
   // Preferences
-  const [prefs, setPrefs] = useState({ theme: 'Dark', lang: 'Python', notify: true });
+  const [prefs, setPrefs] = useState(() => {
+    try {
+      return { theme: 'Dark', lang: 'Python', ...JSON.parse(localStorage.getItem('code_radar_preferences') || '{}') };
+    } catch {
+      return { theme: 'Dark', lang: 'Python' };
+    }
+  });
+
+  useEffect(() => {
+    let active = true;
+    apiFetch('/auth/me/').then(async (response) => {
+      if (!response.ok) return;
+      const freshUser = await response.json();
+      if (active) {
+        updateUser(freshUser);
+        setUsername(freshUser.username);
+        setEmail(freshUser.email);
+      }
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [updateUser]);
 
   // Theme Switching Logic
   useEffect(() => {
@@ -49,6 +68,10 @@ export default function Profile() {
     }
   }, [prefs.theme]);
 
+  useEffect(() => {
+    localStorage.setItem('code_radar_preferences', JSON.stringify(prefs));
+  }, [prefs]);
+
   if (!user) return null;
 
   const triggerToast = (msg) => {
@@ -57,33 +80,52 @@ export default function Profile() {
     setTimeout(() => setShowToast(false), 3000);
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     if (e) e.preventDefault();
     setIsSaving(true);
-    setTimeout(() => {
-      login({ ...user, username, email });
+    try {
+      const response = await apiFetch('/auth/profile/', {
+        method: 'PATCH',
+        body: JSON.stringify({ name: username, email }),
+      });
+      if (!response.ok) throw await responseError(response, 'Unable to save profile.');
+      const updatedUser = await response.json();
+      updateUser(updatedUser);
       setIsSaving(false);
       triggerToast('Profile updated successfully!');
-    }, 800);
+    } catch (error) {
+      window.alert(error.message);
+      setIsSaving(false);
+    }
   };
 
-  const handlePassChange = (e) => {
+  const handlePassChange = async (e) => {
     e.preventDefault();
     if (passwords.next !== passwords.confirm) {
-      alert("Passwords do not match!");
+      window.alert('Passwords do not match.');
       return;
     }
     setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
+    try {
+      const response = await apiFetch('/auth/password/', {
+        method: 'POST',
+        body: JSON.stringify({ current_password: passwords.current, new_password: passwords.next }),
+      });
+      if (!response.ok) throw await responseError(response, 'Unable to change password.');
+      const data = await response.json();
+      setAuthToken(data.token);
+      updateUser(data.user);
       setPasswords({ current: '', next: '', confirm: '' });
+      setIsSaving(false);
       triggerToast('Password changed successfully!');
-    }, 1000);
+    } catch (error) {
+      window.alert(error.message);
+      setIsSaving(false);
+    }
   };
 
   const navItems = [
     { label: 'Account Details', icon: User },
-    { label: 'Notifications', icon: Bell },
     { label: 'Security', icon: Shield },
     { label: 'Preferences', icon: Settings },
   ];
@@ -165,60 +207,19 @@ export default function Profile() {
                   <div className="usage-stats">
                     <div className="stat-row">
                       <span>Member Since</span>
-                      <strong>April 2024</strong>
+                      <strong>{user.date_joined ? new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(new Date(user.date_joined)) : '—'}</strong>
                     </div>
                     <div className="stat-row">
                       <span>Analyses Done</span>
-                      <strong>142</strong>
+                      <strong>{user.analysis_count ?? 0}</strong>
                     </div>
                     <div className="stat-row">
-                       <span className="badge-pro">Pro Plan</span>
+                       <span>Personal workspace</span>
                     </div>
                   </div>
                 </div>
               </div>
             </form>
-          )}
-
-          {/* TAB: Notifications */}
-          {activeTab === 'Notifications' && (
-            <div className="profile-section">
-              <div className="section-header-row">
-                <div className="section-title-group">
-                  <h2>Notifications</h2>
-                  <p>Stay updated on your code health and AI suggestions.</p>
-                </div>
-              </div>
-              <div className="settings-card full-width">
-                <div className="card-header">
-                   <Bell size={20} className="text-accent" />
-                   <h4>Notification Channels</h4>
-                </div>
-                <div className="toggle-list">
-                  <div className="toggle-item">
-                    <div>
-                      <h5>Email Notifications</h5>
-                      <p>Receive reports when your code is analyzed.</p>
-                    </div>
-                    <input type="checkbox" className="toggle-switch" checked={prefs.notify} onChange={() => { setPrefs({...prefs, notify: !prefs.notify}); triggerToast('Preference saved!'); }} />
-                  </div>
-                  <div className="toggle-item">
-                    <div>
-                      <h5>Weekly Summaries</h5>
-                      <p>Receive a weekly review of your code complexity trends.</p>
-                    </div>
-                    <input type="checkbox" className="toggle-switch" defaultChecked />
-                  </div>
-                  <div className="toggle-item">
-                    <div>
-                      <h5>AI Optimization Alerts</h5>
-                      <p>Get notified when Groq identifies severe nested loops.</p>
-                    </div>
-                    <input type="checkbox" className="toggle-switch" defaultChecked />
-                  </div>
-                </div>
-              </div>
-            </div>
           )}
 
           {/* TAB: Security */}
@@ -231,23 +232,14 @@ export default function Profile() {
                 </div>
               </div>
 
-              <div className={`security-card ${is2FAEnabled ? 'active-border' : ''}`}>
+              <div className="security-card">
                 <div className="security-info">
-                  <Shield size={24} className={is2FAEnabled ? 'text-success' : 'text-muted'} />
+                  <Shield size={24} className="text-muted" />
                   <div>
                     <h4>Two-Factor Authentication</h4>
-                    <p>Add an extra layer of security to your account.</p>
+                    <p>Two-factor authentication is not available yet.</p>
                   </div>
                 </div>
-                <button 
-                  className={`btn ${is2FAEnabled ? 'btn-secondary' : 'btn-primary'} btn-sm`} 
-                  onClick={() => {
-                    setIs2FAEnabled(!is2FAEnabled);
-                    triggerToast(is2FAEnabled ? '2FA disabled' : '2FA enabled');
-                  }}
-                >
-                  {is2FAEnabled ? 'Disable' : 'Enable'}
-                </button>
               </div>
 
               <div className="settings-card mt-6">

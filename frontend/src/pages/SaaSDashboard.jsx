@@ -1,4 +1,4 @@
-import { useAuth } from '../context/AuthContext';
+import useAuth from '../context/useAuth';
 import { Link } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -13,26 +13,34 @@ import {
   Activity
 } from 'lucide-react';
 import './SaaSDashboard.css';
+import { useEffect, useState } from 'react';
+import { apiFetch } from '../lib/api';
 
 export default function SaasDashboard() {
   const { user } = useAuth();
 
+  const [recentActivity, setRecentActivity] = useState([]);
+  useEffect(() => {
+    apiFetch('/history/').then(response => response.ok ? response.json() : []).then(setRecentActivity).catch(() => setRecentActivity([]));
+  }, []);
+
+  const avgComplexity = recentActivity.length
+    ? (recentActivity.reduce((sum, item) => sum + Number(item.metrics?.avg_complexity || 0), 0) / recentActivity.length).toFixed(1)
+    : '—';
+  const avgHealth = recentActivity.length
+    ? `${Math.round(recentActivity.reduce((sum, item) => sum + Number(item.metrics?.maintainability_index || 0), 0) / recentActivity.length)}%`
+    : '—';
   const stats = [
-    { label: 'Total Analyzed', value: '142', icon: Code2, color: 'text-accent' },
-    { label: 'Avg. Complexity', value: '4.2', icon: TrendingUp, color: 'text-success' },
-    { label: 'Refactors Done', value: '28', icon: Zap, color: 'text-warning' },
-    { label: 'Health Score', value: '92%', icon: CheckCircle2, color: 'text-primary' },
+    { label: 'Recent Analyses', value: recentActivity.length, icon: Code2, color: 'text-accent' },
+    { label: 'Avg. Complexity', value: avgComplexity, icon: TrendingUp, color: 'text-success' },
+    { label: 'Refactors Done', value: '—', icon: Zap, color: 'text-warning' },
+    { label: 'Avg. Maintainability', value: avgHealth, icon: CheckCircle2, color: 'text-primary' },
   ];
 
-  const recentActivity = [
-    { id: 1, title: 'Auth Middleware', lang: 'Python', score: 'Low', date: '2 hours ago' },
-    { id: 2, title: 'Data Pipeline', lang: 'Python', score: 'Medium', date: '5 hours ago' },
-    { id: 3, title: 'React UI Utils', lang: 'JavaScript', score: 'Low', date: 'Yesterday' },
-  ];
-
-  // Dummy trend data for the sparkline (Presentation Mode)
-  const trendPoints = [72, 75, 74, 78, 85, 82, 88, 91, 89, 94, 95];
-  const targetLine = 95;
+  const trendPoints = recentActivity.length
+    ? recentActivity.slice(0, 11).reverse().map(item => Number(item.metrics?.maintainability_index || 0))
+    : [0];
+  const targetLine = 80;
 
   return (
     <div className="saas-dashboard">
@@ -53,9 +61,9 @@ export default function SaasDashboard() {
         <div className="trend-header">
           <div className="trend-title">
             <Activity size={18} className="text-accent" />
-            <h3>System Health Trend</h3>
+            <h3>Maintainability Trend</h3>
           </div>
-          <div className="trend-badge">Target: 95%</div>
+          <div className="trend-badge">80 MI benchmark</div>
         </div>
         <div className="sparkline-container">
           <div className="sparkline spark-summary">
@@ -108,19 +116,20 @@ export default function SaasDashboard() {
             <Link to="/history">View All</Link>
           </div>
           <div className="activity-list">
-            {recentActivity.map(item => (
+            {recentActivity.slice(0, 5).map(item => (
               <div key={item.id} className="activity-item">
                 <div className="activity-info">
-                  <div className="activity-avatar">{item.lang[0]}</div>
+                  <div className="activity-avatar">{(item.metrics?.language || 'C')[0]}</div>
                   <div>
-                    <div className="activity-title">{item.title}</div>
-                    <div className="activity-meta">{item.lang} • {item.date}</div>
+                    <div className="activity-title">{item.code_snippet.split('\n')[0].slice(0, 36) || 'Code analysis'}</div>
+                    <div className="activity-meta">{item.metrics?.language || 'Code'} • {new Date(item.created_at).toLocaleString()}</div>
                   </div>
                 </div>
-                <span className={`badge score-${item.score.toLowerCase()}`}>{item.score}</span>
+                <span className={`badge score-${(item.score || 'low').toLowerCase()}`}>{item.score}</span>
               </div>
             ))}
           </div>
+          {recentActivity.length === 0 && <p className="activity-empty">Your completed analyses will appear here.</p>}
         </section>
 
         <section className="insights-card">

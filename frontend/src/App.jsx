@@ -1,5 +1,7 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
+import { AuthProvider } from './context/AuthContext';
+import useAuth from './context/useAuth';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -19,10 +21,17 @@ function RootRoute() {
   return user ? <SaasDashboard /> : <Landing />;
 }
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }, [pathname]);
+  return null;
+}
+
 function App() {
   return (
     <AuthProvider>
       <Router>
+        <ScrollToTop />
         <div className="app-container">
           <Navbar />
           <main className="main-viewport">

@@ -4,7 +4,7 @@ export default function About() {
   return (
     <div className="about-page">
       <div className="about-header">
-        <h1>About Code Radar v2</h1>
+        <h1>About Code Radar</h1>
         <p>A professional code complexity analyzer powered by Machine Learning and AI.</p>
       </div>
 
@@ -42,7 +42,7 @@ export default function About() {
           <h2>Groq AI Integration</h2>
           <p>
             Understanding that code is complex is only the first step. To provide actionable guidance, 
-            we pass your code metrics directly to <strong>Groq's Llama 3.3 70B</strong> model.
+            we pass your code metrics directly to <strong>gpt oss 120b</strong> model.
           </p>
           <p>
             Groq's revolutionary LPU hardware generates high-quality refactoring suggestions almost instantaneously, 

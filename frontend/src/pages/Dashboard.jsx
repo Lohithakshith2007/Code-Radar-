@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Play, RotateCcw, Brain, Activity, Zap, Shield, Search, Code } from "lucide-react";
-
-const API_BASE = `${import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000"}/api`;
+import { apiFetch, responseError } from "../lib/api";
+import FormattedResponse from "../components/FormattedResponse";
 
 export default function Dashboard() {
   const [code, setCode] = useState("");
@@ -16,7 +16,7 @@ export default function Dashboard() {
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const chatEndRef = useRef(null);
+  const chatMessagesRef = useRef(null);
   const textareaRef = useRef(null);
   const lineNumbersRef = useRef(null);
 
@@ -27,12 +27,8 @@ export default function Dashboard() {
     }
   }, []);
 
-  const scrollToBottom = () => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   useEffect(() => {
-    scrollToBottom();
+    if (chatMessagesRef.current) chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
   }, [chatMessages, isChatOpen]);
 
   const analyzeCode = async () => {
@@ -45,15 +41,14 @@ export default function Dashboard() {
     setChatMessages([]);
 
     try {
-      const res = await fetch(`${API_BASE}/analyze/`, {
+      const res = await apiFetch("/analyze/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code }),
       });
 
       if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Analysis failed");
+        throw await responseError(res, "Analysis failed");
       }
 
       const data = await res.json();
@@ -70,7 +65,7 @@ export default function Dashboard() {
     setAiLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/suggest/`, {
+      const res = await apiFetch("/suggest/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code, metrics: result }),
@@ -102,7 +97,7 @@ export default function Dashboard() {
     try {
       const history = chatMessages.map(m => ({ role: m.role, content: m.content }));
       
-      const res = await fetch(`${API_BASE}/chat/`, {
+      const res = await apiFetch("/chat/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code, metrics: result, history, message: userMsg }),
@@ -134,24 +129,6 @@ export default function Dashboard() {
 
   const lineCount = Math.max(code.split("\n").length, 25);
   const lines = Array.from({ length: lineCount }, (_, i) => i + 1);
-
-  const renderMarkdown = (text) => {
-    if (!text) return "";
-    let html = text
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/^### (.+)$/gm, "<h3>$1</h3>")
-      .replace(/^## (.+)$/gm, "<h2>$1</h2>")
-      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-      .replace(/`([^`]+)`/g, "<code>$1</code>")
-      .replace(/^- (.+)$/gm, "<li>$1</li>")
-      .replace(/^> (.+)$/gm, "<blockquote>$1</blockquote>")
-      .replace(/\n\n/g, "<br/><br/>")
-      .replace(/\n/g, "<br/>");
-    html = html.replace(/((?:<li>.*?<\/li><br\/>?)+)/g, "<ul>$1</ul>");
-    return html;
-  };
 
   return (
     <div className="dashboard-layout">
@@ -327,12 +304,9 @@ export default function Dashboard() {
               
               {aiSuggestion && (
                 <div className="ai-result-box">
-                  <div
-                    className="ai-response"
-                    dangerouslySetInnerHTML={{
-                      __html: renderMarkdown(aiSuggestion.suggestion),
-                    }}
-                  />
+                  <div className="ai-response">
+                    <FormattedResponse text={aiSuggestion.suggestion} />
+                  </div>
                   <div className="ai-source-badge">
                     {aiSuggestion.source === "groq" ? <Zap size={12} /> : <Shield size={12} />}
                     {aiSuggestion.source === "groq" ? "Powered by Groq" : "Rule-based analysis"}
@@ -358,7 +332,7 @@ export default function Dashboard() {
                     <span className="chat-badge text-muted">Powered by Groq</span>
                   </div>
                   
-                  <div className="chat-messages">
+                  <div className="chat-messages" ref={chatMessagesRef}>
                     <div className="chat-message assistant">
                       <div className="chat-bubble">
                         I'm your AI coding assistant. What specific questions do you have about the complexity or the refactoring suggestions?
@@ -366,10 +340,7 @@ export default function Dashboard() {
                     </div>
                     {chatMessages.map((msg, idx) => (
                       <div key={idx} className={`chat-message ${msg.role}`}>
-                        <div 
-                          className="chat-bubble"
-                          dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
-                        />
+                        <div className="chat-bubble"><FormattedResponse text={msg.content} /></div>
                       </div>
                     ))}
                     {chatLoading && (
@@ -377,7 +348,6 @@ export default function Dashboard() {
                         <div className="chat-bubble loading"><span className="spinner small"></span> Thinking...</div>
                       </div>
                     )}
-                    <div ref={chatEndRef} />
                   </div>
 
                   <form className="chat-input-area" onSubmit={handleChatSubmit}>

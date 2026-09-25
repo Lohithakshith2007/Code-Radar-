@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Activity, LayoutDashboard, History, Info, LogIn, User, Smartphone, PieChart, Code2 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import useAuth from '../context/useAuth';
 import './Navbar.css';
 
 export default function Navbar() {
@@ -29,7 +29,7 @@ export default function Navbar() {
         <div className="logo-icon">
           <Activity size={20} />
         </div>
-        <h1>Code Radar <span>v2</span></h1>
+        <h1 className="brand-name">Code <span>Radar</span></h1>
       </Link>
       
       <nav className="navbar-links">
