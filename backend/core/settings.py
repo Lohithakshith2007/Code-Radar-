@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
     'analyzer',
     "corsheaders",
 ]
@@ -70,6 +71,15 @@ CORS_ALLOWED_ORIGIN_REGEXES = [origin.strip() for origin in os.environ.get(
     'CORS_ALLOWED_ORIGIN_REGEXES',
     '',
 ).split(',') if origin.strip()]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
 
 ROOT_URLCONF = 'core.urls'
 

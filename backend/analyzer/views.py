@@ -224,6 +224,7 @@ def analyze_code(request):
     # Save to history
     try:
         AnalysisRecord.objects.create(
+            user=request.user,
             code_snippet=code[:2000],
             metrics=metrics,
             score=metrics.get("ml_prediction") or metrics["score"],
@@ -295,7 +296,7 @@ Format your response in clean markdown."""
 
         # Update the latest analysis record
         try:
-            latest = AnalysisRecord.objects.first()
+            latest = AnalysisRecord.objects.filter(user=request.user).first()
             if latest and not latest.ai_suggestion:
                 latest.ai_suggestion = suggestion
                 latest.save()
@@ -362,7 +363,7 @@ def generate_rule_based_suggestions(code, metrics):
 @api_view(["GET"])
 def analysis_history(request):
     """Return the last 20 analysis records."""
-    records = AnalysisRecord.objects.all()[:20]
+    records = AnalysisRecord.objects.filter(user=request.user)[:20]
     data = []
     for rec in records:
         data.append({
@@ -379,7 +380,7 @@ def analysis_history(request):
 @api_view(["DELETE"])
 def clear_history(request):
     """Clear all analysis history."""
-    count, _ = AnalysisRecord.objects.all().delete()
+    count, _ = AnalysisRecord.objects.filter(user=request.user).delete()
     return Response({"deleted": count})
 
 
@@ -444,4 +445,3 @@ Answer the user's questions clearly, concisely, and provide code examples. Forma
 
     except Exception as e:
         return Response({"error": f"AI Chat Error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-

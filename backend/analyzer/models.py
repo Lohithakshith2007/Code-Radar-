@@ -1,8 +1,15 @@
 from django.db import models
-import json
+from django.conf import settings
 
 
 class AnalysisRecord(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="analysis_records",
+        null=True,
+        blank=True,
+    )
     code_snippet = models.TextField()
     language = models.CharField(max_length=50, default="python")
     metrics = models.JSONField(default=dict)
