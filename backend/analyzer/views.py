@@ -236,7 +236,7 @@ def analyze_code(request):
 
 @api_view(["POST"])
 def ai_suggest(request):
-    """Get AI-powered refactoring suggestions using Groq (Llama 3.3)."""
+    """Get AI-powered refactoring suggestions using Groq."""
     code = request.data.get("code", "")
     metrics = request.data.get("metrics", {})
 
@@ -286,7 +286,7 @@ Format your response in clean markdown."""
 
         response = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
-            model="llama-3.3-70b-versatile",
+            model=os.getenv("GROQ_MODEL"),
             temperature=0.6,
             max_tokens=2000,
         )
@@ -435,7 +435,7 @@ Answer the user's questions clearly, concisely, and provide code examples. Forma
 
         response = client.chat.completions.create(
             messages=messages,
-            model="llama-3.3-70b-versatile",
+            model=os.getenv("GROQ_MODEL"),
             temperature=0.6,
             max_tokens=1500,
         )
