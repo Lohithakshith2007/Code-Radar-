@@ -29,9 +29,11 @@ load_dotenv(BASE_DIR / '.env')
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-local-development-only')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'true').lower() == 'true'
+DEBUG = os.environ.get('DEBUG', 'true' if not os.environ.get('RENDER') else 'false').lower() == 'true'
 
 ALLOWED_HOSTS = [host.strip() for host in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if host.strip()]
+if os.environ.get('RENDER_EXTERNAL_HOSTNAME'):
+    ALLOWED_HOSTS.append(os.environ['RENDER_EXTERNAL_HOSTNAME'])
 
 
 # Application definition
@@ -63,6 +65,10 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.environ.get(
     'CORS_ALLOWED_ORIGINS',
     'http://localhost:5173,http://127.0.0.1:5173,'
+).split(',') if origin.strip()]
+CORS_ALLOWED_ORIGIN_REGEXES = [origin.strip() for origin in os.environ.get(
+    'CORS_ALLOWED_ORIGIN_REGEXES',
+    '',
 ).split(',') if origin.strip()]
 
 ROOT_URLCONF = 'core.urls'
